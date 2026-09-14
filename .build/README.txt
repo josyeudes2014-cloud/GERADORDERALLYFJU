@@ -1,0 +1,1 @@
+Temporary build payload for assembling public/index.html. Safe to remove after assembly.
