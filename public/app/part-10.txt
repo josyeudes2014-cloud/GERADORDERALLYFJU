@@ -1,0 +1,47 @@
+">Nenhum registro encontrado para o mês selecionado.</p>`; hideLoading(); return; }
+
+const destaque = [...sortedRelatorio].sort((a,b) => (b.p_encontro + b.p_algo) - (a.p_encontro + a.p_algo))[0] || {nome: "N/A", p_encontro: 0, p_algo: 0};
+const ganhadorAlmas = [...sortedRelatorio].sort((a,b) => b.jovens - a.jovens)[0] || {nome: "N/A", jovens: 0};
+const disciplinado = [...sortedRelatorio].sort((a,b) => b.uniforme - a.uniforme)[0] || {nome: "N/A", uniforme: 0};
+
+container.innerHTML = `<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+<div class="bg-green-100 p-4 rounded-lg text-center shadow"><h4 class="font-bold text-green-800">Destaque do Mês</h4><p class="text-xl">${destaque.nome} (${destaque.p_encontro + destaque.p_algo} pres.)</p></div>
+<div class="bg-blue-100 p-4 rounded-lg text-center shadow"><h4 class="font-bold text-blue-800">Maior Ganhador de Almas</h4><p class="text-xl">${ganhadorAlmas.nome} (${ganhadorAlmas.jovens} jovens)</p></div>
+<div class="bg-yellow-100 p-4 rounded-lg text-center shadow"><h4 class="font-bold text-yellow-800">Mais Disciplinado (Uniforme)</h4><p class="text-xl">${disciplinado.nome} (${disciplinado.uniforme}x)</p></div>
+</div>
+<div id="relatorio-para-pdf-obreiros" class="overflow-x-auto bg-white rounded-lg shadow-md"><table class="min-w-full"><thead class="bg-secundaria text-white"><tr><th class="p-3 text-left">Obreiro</th><th class="p-2 text-center" title="Presenças (Fim de Semana)">P(FS)</th><th class="p-2 text-center" title="Presenças (Seg)">P(S)</th><th class="p-2 text-center" title="Faltas Justificadas">FJ</th><th class="p-2 text-center" title="Faltas Sem Justificativa">FS</th><th class="p-2 text-center" title="Jovens Trazidos">Jovens</th><th class="p-2 text-center" title="Uniformes (Fim de Semana)">Uniforme</th></tr></thead><tbody>
+${sortedRelatorio.map(d => `<tr class="border-b even:bg-gray-50" data-obreiro-nome="${d.nome}" data-obreiro-dados='${JSON.stringify(d)}'><td class="p-2 font-semibold">${d.nome}<button onclick="compartilharRelatorioPessoalWhatsApp(this)" title="Enviar para ${d.nome}" class="ml-2 float-right text-green-500 hover:text-green-700"><i class="fab fa-whatsapp"></i></button></td><td class="p-2 text-center">${d.p_encontro}</td><td class="p-2 text-center">${d.p_algo}</td><td class="p-2 text-center text-yellow-600">${d.f_just}</td><td class="p-2 text-center text-red-600">${d.f_sem}</td><td class="p-2 text-center font-bold text-principal">${d.jovens}</td><td class="p-2 text-center">${d.uniforme}</td></tr>`).join('')}
+</tbody></table></div>
+<div class="mt-6 flex flex-col md:flex-row gap-4">
+<button onclick="gerarPDFCompleto('relatorio-para-pdf-obreiros', 'relatorio_obreiros.pdf')" class="w-full md:w-auto flex-1 bg-red-600 text-white font-bold py-3 px-6 rounded-lg flex items-center justify-center gap-2"><i class="fas fa-file-pdf"></i> Baixar PDF Completo</button>
+<button onclick="compartilharResumoWhatsApp('obreiros', '${mesInput}')" class="w-full md:w-auto flex-1 bg-green-500 text-white font-bold py-3 px-6 rounded-lg flex items-center justify-center gap-2"><i class="fab fa-whatsapp"></i> Compartilhar Resumo</button>
+</div>`;
+hideLoading();
+}
+
+window.compartilharRelatorioPessoalWhatsApp = (btn) => {
+const row = btn.closest('tr');
+const nome = row.getAttribute('data-obreiro-nome');
+const dados = JSON.parse(row.getAttribute('data-obreiro-dados'));
+const mes = document.getElementById('mes-relatorio-obreiros').value;
+const texto = `*Relatório ${tituloDoEvento} - ${nome}*\n*Mês:* ${mes}\n\nOlá ${nome}, tudo bem?\nSegue seu resumo de atividades:\n\n- *Encontros (Fim de Semana):* ${dados.p_encontro} presenças\n- *Algo a Mais (Segunda):* ${dados.p_algo} presenças\n- *Faltas com Justificativa:* ${dados.f_just}\n- *Faltas sem Justificativa:* ${dados.f_sem}\n- *Jovens Trazidos:* ${dados.jovens}\n\nContinue firme nessa força! 💪`;
+window.open(`https://wa.me/?text=${encodeURIComponent(texto)}`, '_blank');
+}
+
+async function renderizarGerenciarJovens() {
+const container = document.getElementById('conteudo-gerenciarJovens');
+container.innerHTML = `
+<h3 class="text-3xl font-bold text-principal mb-2">Gerenciamento de Jovens</h3>
+<p class="text-gray-600 mb-6">Cadastre, edite perfis e acompanhe a frequência dos jovens.</p>
+<div class="mb-6 border-b border-gray-200">
+<nav class="flex space-x-4">
+<button onclick="trocarAbaJovens('lancamento')" class="py-2 px-4 font-semibold border-b-2 border-principal text-principal">Controle e Lançamento</button>
+<button onclick="trocarAbaJovens('relatorio')" class="py-2 px-4 font-semibold border-b-2 border-transparent text-gray-500 hover:text-principal">Relatório Mensal</button>
+</nav>
+</div>
+<div id="aba-lancamento-jovens">
+<div class="bg-white p-6 rounded-lg shadow-md mb-6">
+<h4 class="text-xl font-bold text-secundaria mb-4">Adicionar Novo Jovem</h4>
+<div class="flex flex-col md:flex-row gap-4">
+<input type="text" id="nome-novo-jovem" placeholder="Nome completo do jovem" class="flex-grow p-2 border rounded-lg">
+<button id="btn-adicionar-j
