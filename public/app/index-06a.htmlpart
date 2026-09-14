@@ -1,0 +1,71 @@
+                    <td class="p-3 text-center">
+                        <button onclick="excluirPessoa('${obreiro.id}', '${obreiro.nome.replace(/'/g, "\\'")}', 'obreiros')" class="text-red-500 hover:text-red-700 text-lg"><i class="fas fa-trash-alt"></i></button>
+                    </td>
+                </tr>`;
+            }).join('');
+        }
+
+        window.salvarRegistrosObreiros = async () => {
+            const dataLancamento = document.getElementById('data-lancamento-obreiros').value;
+            if (!dataLancamento) { return mostrarMensagem("Por favor, selecione uma data.", 'error'); }
+            showLoading("Salvando...");
+            const batch = writeBatch(db);
+            let count = 0;
+            document.querySelectorAll('#lista-lancamento-obreiros tr').forEach(row => {
+                const id = row.getAttribute('data-id');
+                const nome = row.getAttribute('data-nome');
+                if(!id) return;
+                
+                const celulaEncontro = row.querySelectorAll('td')[1];
+                const presencaBtnEncontro = celulaEncontro.querySelector('.bg-green-500, .bg-red-500');
+                if (presencaBtnEncontro) {
+                    const status = presencaBtnEncontro.textContent === 'P' ? 'presente' : 'ausente';
+                    const docId = `${dataLancamento}_${id}_encontro_jovem`;
+                    const docRef = doc(db, "registros_obreiros", docId);
+                    const dataToSet = { 
+                        obreiroId: id, obreiroNome: nome, data: dataLancamento, reuniao: 'encontro_jovem', status, 
+                        jovensTrazidos: parseInt(celulaEncontro.querySelector('input[data-tipo="jovens"]').value) || 0, 
+                        justificativa: celulaEncontro.querySelector('input[data-tipo="justificativa"]').value.trim(),
+                        uniforme: row.querySelector('input[data-tipo="uniforme"]').checked
+                    };
+                    batch.set(docRef, dataToSet);
+                    count++;
+                }
+
+                const celulaAlgoMais = row.querySelectorAll('td')[3];
+                const presencaBtnAlgoMais = celulaAlgoMais.querySelector('.bg-green-500, .bg-red-500');
+                 if (presencaBtnAlgoMais) {
+                    const status = presencaBtnAlgoMais.textContent === 'P' ? 'presente' : 'ausente';
+                    const docId = `${dataLancamento}_${id}_algo_a_mais`;
+                    const docRef = doc(db, "registros_obreiros", docId);
+                    const dataToSet = { 
+                        obreiroId: id, obreiroNome: nome, data: dataLancamento, reuniao: 'algo_a_mais', status,
+                        justificativa: celulaAlgoMais.querySelector('input[data-tipo="justificativa"]').value.trim()
+                    };
+                    batch.set(docRef, dataToSet);
+                    count++;
+                }
+            });
+            if (count === 0) { hideLoading(); return mostrarMensagem("Nenhum registro de frequência preenchido.", 'info'); }
+            try { await batch.commit(); hideLoading(); mostrarMensagem("Registros dos obreiros salvos com sucesso!", "success"); carregarListaDeObreiros();}
+            catch (e) { hideLoading(); mostrarMensagem("Erro ao salvar os registros dos obreiros.", "error"); }
+        }
+
+        window.gerarRelatorioObreiros = async () => {
+            const mesInput = document.getElementById('mes-relatorio-obreiros').value;
+            if(!mesInput){ return mostrarMensagem("Por favor, selecione um mês.", "warning"); }
+            showLoading("Gerando relatório...");
+            
+            const container = document.getElementById('relatorio-container-obreiros');
+            container.innerHTML = '<p class="text-center text-gray-500">Processando dados...</p>';
+
+            const obreirosSnapshot = await getDocs(query(collection(db, "obreiros"), orderBy("nome")));
+            const dadosRelatorio = new Map(obreirosSnapshot.docs.map(doc => [doc.id, { nome: doc.data().nome, p_encontro: 0, p_algo: 0, f_just: 0, f_sem: 0, jovens: 0, uniforme: 0 }]));
+
+            const q = query(collection(db, "registros_obreiros"), where("data", ">=", `${mesInput}-01`), where("data", "<=", `${mesInput}-31`));
+            const snapshot = await getDocs(q);
+            
+            snapshot.forEach(docSnap => {
+                const data = docSnap.data();
+                const obreiro = dadosRelatorio.get(data.obreiroId);
+                if(obreiro){
