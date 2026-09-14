@@ -1,0 +1,112 @@
+kboxesTribosHTML = '<p class="col-span-full text-center text-gray-500">Carregando tribos...</p>';
+try {
+const todasTribosSnapshot = await getDocs(query(collection(db, "todas_as_tribos"), orderBy("nome")));
+if (!todasTribosSnapshot.empty) {
+checkboxesTribosHTML = '';
+todasTribosSnapshot.forEach(doc => {
+const tribo = { id: doc.id, ...doc.data() };
+const isChecked = tribosAtivasAtuais.includes(tribo.id) ? 'checked' : '';
+checkboxesTribosHTML += `
+<label class="flex items-center p-3 bg-gray-50 rounded-lg border hover:bg-gray-100 transition-all cursor-pointer">
+<input type="checkbox" value="${tribo.id}" class="h-5 w-5 rounded text-principal focus:ring-principal" data-info='${JSON.stringify(tribo)}' ${isChecked}>
+<img src="${tribo.img}" class="w-8 h-8 rounded-full object-cover mx-3">
+<span class="font-semibold text-lg">${tribo.nome}</span>
+</label>
+`;
+});
+} else {
+checkboxesTribosHTML = '<p class="col-span-full text-center text-red-500">Nenhuma tribo encontrada. Cadastre-as no Firestore.</p>';
+}
+} catch (e) {
+checkboxesTribosHTML = '<p class="col-span-full text-center text-red-500">Erro ao carregar a lista de tribos.</p>';
+}
+
+const temas = [
+{ id: 'padrao', nome: 'Padrão FJU (Azul/Vermelho)', cores: { principal: '#00539f', secundaria: '#003a70', destaque: '#d52b1e' } },
+{ id: 'ouro', nome: 'Ouro e Preto', cores: { principal: '#E1B12C', secundaria: '#2C3A47', destaque: '#F79F1F' } },
+{ id: 'esmeralda', nome: 'Verde Esmeralda', cores: { principal: '#079992', secundaria: '#056660', destaque: '#38ada9' } },
+{ id: 'rubi', nome: 'Vinho Rubi', cores: { principal: '#b71540', secundaria: '#63001c', destaque: '#ff3f70' } },
+{ id: 'royal', nome: 'Roxo Royal', cores: { principal: '#8e44ad', secundaria: '#572769', destaque: '#c47add' } },
+];
+
+const temaAtualId = configAtual.tema ? temas.find(t => t.cores.principal === configAtual.tema.principal)?.id || 'padrao' : 'padrao';
+
+container.innerHTML = `
+<div class="space-y-6">
+<div>
+<label class="block font-bold text-secundaria mb-1">Título do Evento</label>
+<input type="text" id="config-titulo-evento" class="w-full p-2 border rounded-lg text-lg" value="${normalizarTituloEvento(configAtual.tituloEvento)}" placeholder="Ex: RALLY FJU DO IDE">
+</div>
+<div>
+<label class="block font-bold text-secundaria mb-1">Subtítulo do Evento</label>
+<input type="text" id="config-subtitulo-evento" class="w-full p-2 border rounded-lg" value="${configAtual.subtituloEvento || ''}" placeholder="Ex: Só os valentes fazem a diferença!">
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<div>
+<label class="block font-bold text-secundaria mb-1">Semanas de Duração</label>
+<input type="number" id="config-semanas" class="w-full p-2 border rounded-lg" value="${configAtual.semanas || 5}" min="1" max="12">
+</div>
+<div>
+<label class="block font-bold text-secundaria mb-1">Tema de Cores</label>
+<select id="config-tema" class="w-full p-2 border rounded-lg bg-white">
+${temas.map(t => `<option value='${JSON.stringify(t.cores)}' ${t.id === temaAtualId ? 'selected' : ''}>${t.nome}</option>`).join('')}
+</select>
+</div>
+</div>
+<div>
+<h4 class="text-lg font-bold text-secundaria mt-4 mb-2">Selecione as Tribos Participantes</h4>
+<div id="container-selecao-tribos" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 max-h-64 overflow-y-auto p-2 bg-gray-100 rounded">
+${checkboxesTribosHTML}
+</div>
+</div>
+</div>
+`;
+}
+
+window.salvarConfiguracoes = async () => {
+const novoTitulo = document.getElementById('config-titulo-evento').value.trim();
+const novoSubtitulo = document.getElementById('config-subtitulo-evento').value.trim();
+const novasSemanas = parseInt(document.getElementById('config-semanas').value) || 5;
+const novoTema = JSON.parse(document.getElementById('config-tema').value);
+
+if (!novoTitulo) return mostrarMensagem("O título do evento não pode ficar em branco.", "warning");
+
+const novasTribosAtivas = {};
+const checkboxes = document.querySelectorAll('#container-selecao-tribos input[type="checkbox"]:checked');
+if (checkboxes.length === 0) return mostrarMensagem("Selecione pelo menos uma tribo.", "warning");
+
+checkboxes.forEach(cb => {
+const info = JSON.parse(cb.dataset.info);
+novasTribosAtivas[info.id] = { nome: info.nome, img: info.img };
+});
+
+const newConfig = {
+tituloEvento: novoTitulo,
+subtituloEvento: novoSubtitulo,
+semanas: novasSemanas,
+tema: novoTema,
+tribosAtivas: novasTribosAtivas,
+finalizado: false
+};
+
+showLoading("Salvando configurações...");
+try {
+await setDoc(doc(db, "configuracao", "geral"), newConfig);
+hideLoading();
+modalConfigRally.classList.add('hidden');
+
+mostrarMensagem(
+"Configurações salvas! Deseja apagar todos os dados de pontuação e histórico para começar um novo rally com esta configuração?", 
+"warning", 
+true, 
+async () => {
+await executarResetCompleto(true);
+},
+() => {
+mostrarMensagem("Configurações aplicadas. A página será recarregada.", "success");
+setTimeout(() => window.location.reload(), 2000);
+}
+);
+} catch (e) {
+hideLoading();
+console.error("Erro ao salvar configurações:", e)
