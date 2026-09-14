@@ -1,0 +1,79 @@
+xl font-bold text-principal mb-2">Gerenciamento de Obreiros</h3>
+<p class="text-gray-600 mb-6">Cadastre, edite perfis e acompanhe a frequência da sua equipe.</p>
+<div class="mb-6 border-b border-gray-200">
+<nav class="flex space-x-4">
+<button onclick="trocarAbaObreiros('lancamento')" class="py-2 px-4 font-semibold border-b-2 border-principal text-principal">Lançamento Semanal</button>
+<button onclick="trocarAbaObreiros('relatorio')" class="py-2 px-4 font-semibold border-b-2 border-transparent text-gray-500 hover:text-principal">Relatório Mensal</button>
+</nav>
+</div>
+<div id="aba-lancamento-obreiros">
+<div class="bg-white p-6 rounded-lg shadow-md mb-6">
+<h4 class="text-xl font-bold text-secundaria mb-4">Adicionar Novo Obreiro</h4>
+<div class="flex flex-col md:flex-row gap-4">
+<input type="text" id="nome-novo-obreiro" placeholder="Nome completo do obreiro" class="flex-grow p-2 border rounded-lg">
+<button id="btn-adicionar-obreiro" class="bg-principal text-white px-6 py-2 rounded-lg font-semibold hover:bg-secundaria">Salvar Obreiro</button>
+</div>
+</div>
+<div class="bg-white p-4 rounded-lg shadow-md mb-6">
+<label for="data-lancamento-obreiros" class="block font-semibold mb-2 text-secundaria">Selecione a Data de Referência da Semana:</label>
+<input type="date" id="data-lancamento-obreiros" class="p-2 rounded-lg border w-full md:w-auto">
+</div>
+<div class="overflow-x-auto bg-white rounded-lg shadow-md">
+<table class="min-w-full">
+<thead class="bg-secundaria text-white">
+<tr>
+<th class="p-3 text-left">Obreiro</th>
+<th class="p-3 text-center">Encontro Jovem (Fim de Semana)</th>
+<th class="p-3 text-center">Uniforme (Fim de Semana)</th>
+<th class="p-3 text-center">Algo a Mais (Seg)</th>
+<th class="p-3 text-center">Ação</th>
+</tr>
+</thead>
+<tbody id="lista-lancamento-obreiros"></tbody>
+</table>
+</div>
+<button onclick="salvarRegistrosObreiros()" class="mt-6 w-full bg-principal hover:bg-secundaria text-white font-bold py-3 px-6 rounded-lg">Salvar Frequência da Semana</button>
+</div>
+<div id="aba-relatorio-obreiros" class="hidden">
+<div class="bg-white p-4 rounded-lg shadow-md mb-6 flex items-center gap-4">
+<label for="mes-relatorio-obreiros" class="font-semibold text-secundaria">Selecione o Mês:</label>
+<input type="month" id="mes-relatorio-obreiros" class="p-2 rounded-lg border">
+<button onclick="gerarRelatorioObreiros()" class="bg-principal text-white px-4 py-2 rounded-lg">Gerar Relatório</button>
+</div>
+<div id="relatorio-container-obreiros"><p class="text-center text-gray-500">Selecione um mês para começar.</p></div>
+</div>`;
+
+document.getElementById('btn-adicionar-obreiro').addEventListener('click', () => adicionarNovaPessoa('obreiros'));
+await carregarListaDeObreiros();
+}
+
+window.trocarAbaObreiros = (aba) => {
+document.getElementById('aba-lancamento-obreiros').classList.toggle('hidden', aba !== 'lancamento');
+document.getElementById('aba-relatorio-obreiros').classList.toggle('hidden', aba !== 'relatorio');
+document.querySelector('button[onclick="trocarAbaObreiros(\'lancamento\')"]').classList.toggle('border-principal', aba === 'lancamento');
+document.querySelector('button[onclick="trocarAbaObreiros(\'lancamento\')"]').classList.toggle('text-principal', aba === 'lancamento');
+document.querySelector('button[onclick="trocarAbaObreiros(\'lancamento\')"]').classList.toggle('border-transparent', aba !== 'lancamento');
+document.querySelector('button[onclick="trocarAbaObreiros(\'lancamento\')"]').classList.toggle('text-gray-500', aba !== 'lancamento');
+document.querySelector('button[onclick="trocarAbaObreiros(\'relatorio\')"]').classList.toggle('border-principal', aba === 'relatorio');
+document.querySelector('button[onclick="trocarAbaObreiros(\'relatorio\')"]').classList.toggle('text-principal', aba === 'relatorio');
+document.querySelector('button[onclick="trocarAbaObreiros(\'relatorio\')"]').classList.toggle('border-transparent', aba !== 'relatorio');
+document.querySelector('button[onclick="trocarAbaObreiros(\'relatorio\')"]').classList.toggle('text-gray-500', aba !== 'relatorio');
+};
+
+async function carregarListaDeObreiros() {
+const tbody = document.getElementById('lista-lancamento-obreiros');
+if(!tbody) return;
+tbody.innerHTML = '<tr><td colspan="5" class="text-center p-8">Carregando obreiros...</td></tr>';
+const snapshot = await getDocs(query(collection(db, "obreiros"), orderBy("nome")));
+if(snapshot.empty) {
+tbody.innerHTML = '<tr><td colspan="5" class="text-center p-8 text-gray-500">Nenhum obreiro cadastrado.</td></tr>';
+return;
+}
+tbody.innerHTML = snapshot.docs.map(doc => {
+const obreiro = { id: doc.id, ...doc.data() };
+return `
+<tr class="border-b even:bg-gray-50" data-id="${obreiro.id}" data-nome="${obreiro.nome}">
+<td class="p-3 font-semibold"><a href="#" onclick="abrirModalPerfil('${obreiro.id}', 'obreiros')" class="text-principal hover:underline">${obreiro.nome}</a></td>
+<td class="p-3 text-center space-y-2">
+<div class="flex justify-center gap-2">
+<button onclick="marcarPresenca(this)" class="px-3 py-1 text
