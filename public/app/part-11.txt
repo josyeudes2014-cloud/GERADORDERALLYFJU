@@ -1,0 +1,78 @@
+ovem" class="bg-principal text-white px-6 py-2 rounded-lg font-semibold hover:bg-secundaria">Salvar Jovem</button>
+</div>
+</div>
+<div class="bg-white p-4 rounded-lg shadow-md mb-6">
+<label for="data-lancamento-jovens" class="block font-semibold mb-2 text-secundaria">Selecione a Data de Referência da Semana:</label>
+<input type="date" id="data-lancamento-jovens" class="p-2 rounded-lg border w-full md:w-auto">
+</div>
+<div class="overflow-x-auto bg-white rounded-lg shadow-md">
+<table class="min-w-full">
+<thead class="bg-secundaria text-white">
+<tr>
+<th class="p-3 text-left">Jovem</th>
+<th class="p-3 text-center">Encontro Jovem (Fim de Semana)</th>
+<th class="p-3 text-center">Algo a Mais (Seg)</th>
+<th class="p-3 text-center">Ação</th>
+</tr>
+</thead>
+<tbody id="lista-lancamento-jovens"></tbody>
+</table>
+</div>
+<button onclick="salvarRegistrosJovens()" class="mt-6 w-full bg-principal hover:bg-secundaria text-white font-bold py-3 px-6 rounded-lg">Salvar Frequência da Semana</button>
+</div>
+<div id="aba-relatorio-jovens" class="hidden">
+<div class="bg-white p-4 rounded-lg shadow-md mb-6 flex items-center gap-4">
+<label for="mes-relatorio-jovens" class="font-semibold text-secundaria">Selecione o Mês:</label>
+<input type="month" id="mes-relatorio-jovens" class="p-2 rounded-lg border">
+<button onclick="gerarRelatorioJovens()" class="bg-principal text-white px-4 py-2 rounded-lg">Gerar Relatório</button>
+</div>
+<div id="relatorio-container-jovens"><p class="text-center text-gray-500">Selecione um mês para começar.</p></div>
+</div>`;
+document.getElementById('btn-adicionar-jovem').addEventListener('click', () => adicionarNovaPessoa('jovens'));
+await carregarListaDeJovens();
+}
+
+window.trocarAbaJovens = (aba) => {
+document.getElementById('aba-lancamento-jovens').classList.toggle('hidden', aba !== 'lancamento');
+document.getElementById('aba-relatorio-jovens').classList.toggle('hidden', aba !== 'relatorio');
+document.querySelector('button[onclick="trocarAbaJovens(\'lancamento\')"]').classList.toggle('border-principal', aba === 'lancamento');
+document.querySelector('button[onclick="trocarAbaJovens(\'lancamento\')"]').classList.toggle('text-principal', aba === 'lancamento');
+document.querySelector('button[onclick="trocarAbaJovens(\'lancamento\')"]').classList.toggle('border-transparent', aba !== 'lancamento');
+document.querySelector('button[onclick="trocarAbaJovens(\'lancamento\')"]').classList.toggle('text-gray-500', aba !== 'lancamento');
+document.querySelector('button[onclick="trocarAbaJovens(\'relatorio\')"]').classList.toggle('border-principal', aba === 'relatorio');
+document.querySelector('button[onclick="trocarAbaJovens(\'relatorio\')"]').classList.toggle('text-principal', aba === 'relatorio');
+document.querySelector('button[onclick="trocarAbaJovens(\'relatorio\')"]').classList.toggle('border-transparent', aba !== 'relatorio');
+document.querySelector('button[onclick="trocarAbaJovens(\'relatorio\')"]').classList.toggle('text-gray-500', aba !== 'relatorio');
+};
+
+async function carregarListaDeJovens() {
+const tbody = document.getElementById('lista-lancamento-jovens');
+if(!tbody) return;
+tbody.innerHTML = '<tr><td colspan="4" class="text-center p-8">Carregando jovens...</td></tr>';
+const snapshot = await getDocs(query(collection(db, "jovens"), orderBy("nome")));
+if(snapshot.empty) {
+tbody.innerHTML = '<tr><td colspan="4" class="text-center p-8 text-gray-500">Nenhum jovem cadastrado.</td></tr>';
+return;
+}
+tbody.innerHTML = snapshot.docs.map(doc => {
+const jovem = { id: doc.id, ...doc.data() };
+return `
+<tr class="border-b even:bg-gray-50" data-id="${jovem.id}" data-nome="${jovem.nome}">
+<td class="p-3 font-semibold"><a href="#" onclick="abrirModalPerfil('${jovem.id}', 'jovens')" class="text-principal hover:underline">${jovem.nome}</a></td>
+<td class="p-3 text-center space-y-2">
+<div class="flex justify-center gap-2">
+<button onclick="marcarPresenca(this)" class="px-3 py-1 text-sm rounded-full bg-gray-200 hover:bg-green-500 hover:text-white">P</button>
+<button onclick="marcarPresenca(this, true)" class="px-3 py-1 text-sm rounded-full bg-gray-200 hover:bg-red-500 hover:text-white">F</button>
+</div>
+<input type="number" placeholder="Convidados" class="w-20 text-center border rounded p-1" data-tipo="convidados">
+<input type="text" placeholder="Justificativa" class="w-full text-center border rounded p-1 mt-1 hidden" data-tipo="justificativa">
+</td>
+<td class="p-3 text-center space-y-2">
+<div class="flex justify-center gap-2">
+<button onclick="marcarPresenca(this)" class="px-3 py-1 text-sm rounded-full bg-gray-200 hover:bg-green-500 hover:text-white">P</button>
+<button onclick="marcarPresenca(this, true)" class="px-3 py-1 text-sm rounded-full bg-gray-200 hover:bg-red-500 hover:text-white">F</button>
+</div>
+<input type="text" placeholder="Justificativa" class="w-full text-center border rounded p-1 mt-1 hidden" data-tipo="justificativa">
+</td>
+<td class="p-3 text-center">
+<button onclick="excluirPessoa('${jovem.id}', '${jovem.nome.r
