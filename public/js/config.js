@@ -9,9 +9,11 @@ const firebaseConfig = {
   measurementId: "G-BP81LCPJC5"
 };
 
+// Chave pública VAPID do Firebase Cloud Messaging (serial de notificação)
 const firebaseVapidKey = "BKvqGmMsf-EAh84C8-05b9blhxy_SXnsWqgyw6bKqPTTxGrkQfLRY5fjqZoHu8ktp9uprYlcGtyabuczEgps4qs";
 
-const FALLBACK_DATA = {"configuracao": {"geral": {"tituloEvento": "RALLY DOS 300!", "subtituloEvento": "Só os Valentes fazem a Diferença!", "tribosAtivas": {
+// --- DADOS DE FALLBACK ---
+const FALLBACK_DATA = {"configuracao": {"geral": {"tituloEvento": "RALLY FJU DO IDE", "subtituloEvento": "Só os Valentes fazem a Diferença!", "tribosAtivas": {
     "levi": {"nome": "Levi", "img": "imgs/tribos/levi.jpg"},
     "juda": {"nome": "Judá", "img": "imgs/tribos/juda.png"},
     "benjamim": {"nome": "Benjamim", "img": "imgs/tribos/benjamin.png"},
@@ -39,6 +41,7 @@ const FALLBACK_DATA = {"configuracao": {"geral": {"tituloEvento": "RALLY DOS 300
     "zebulom": {"nome": "Zebulom", "img": "imgs/tribos/zebulom.png", "pontos": 0}
 }};
 
+// --- MISSÕES PADRÃO ---
 const MISSOES_PADRAO = {
     1: `🛡️ SEMANA 1 (09/11 a 15/11) 🛡️
 TEMA: O CHAMADO DOS VALENTES
@@ -157,15 +160,17 @@ TEMA: A VITÓRIA FINAL
 400: META DA SEMANA (BÔNUS - TRIBO DE ELITE): Para a tribo que mais trouxer jovens novos.`
 };
 
+// --- VARIÁVEIS GLOBAIS ---
 let app, db, auth, storage;
 let isAdmin = false;
 let rallyConfig = {};
 let atividadesDaSemanaRenderizadas = [];
 let tribosInfo = {};
 let tribosNomes = [];
-let tituloDoEvento = "RALLY FJU";
+let tituloDoEvento = "RALLY FJU DO IDE";
 let subtituloDoEvento = "Só os valentes fazem a diferença!";
 
+// Expor no escopo global para páginas utilitárias (ex.: admin/setup_firebase.html)
 window.firebaseConfig = firebaseConfig;
 window.FALLBACK_DATA = FALLBACK_DATA;
 window.MISSOES_PADRAO = MISSOES_PADRAO;
