@@ -1,0 +1,132 @@
+eplace(/'/g, "\\'")}', 'jovens')" class="text-red-500 hover:text-red-700 text-lg"><i class="fas fa-trash-alt"></i></button>
+</td>
+</tr>`;
+}).join('');
+}
+
+window.salvarRegistrosJovens = async () => {
+const dataLancamento = document.getElementById('data-lancamento-jovens').value;
+if (!dataLancamento) return mostrarMensagem("Por favor, selecione uma data de referência.", 'error');
+
+showLoading("Salvando registros...");
+const batch = writeBatch(db);
+let count = 0;
+document.querySelectorAll('#lista-lancamento-jovens tr').forEach(row => {
+const id = row.getAttribute('data-id');
+const nome = row.getAttribute('data-nome');
+if(!id) return;
+
+['encontro_jovem', 'algo_a_mais'].forEach((reuniao, index) => {
+const celula = row.querySelectorAll('td')[index + 1];
+const presencaBtn = celula.querySelector('.bg-green-500, .bg-red-500');
+if (presencaBtn) {
+const status = presencaBtn.textContent === 'P' ? 'presente' : 'ausente';
+const justificativa = celula.querySelector('input[data-tipo="justificativa"]').value.trim();
+
+const convidadosInput = celula.querySelector('input[data-tipo="convidados"]');
+const convidados = (reuniao === 'encontro_jovem' && convidadosInput) ? parseInt(convidadosInput.value) || 0 : 0;
+
+const docId = `${dataLancamento}_${id}_${reuniao}`;
+const docRef = doc(db, "registros_jovens", docId);
+
+batch.set(docRef, { 
+jovemId: id, 
+jovemNome: nome, 
+data: dataLancamento, 
+reuniao, 
+status, 
+justificativa,
+convidadosTrazidos: convidados
+});
+count++;
+}
+});
+});
+
+if (count === 0) {
+hideLoading(); return mostrarMensagem("Nenhuma frequência foi marcada.", 'info');
+}
+
+try {
+await batch.commit();
+hideLoading();
+mostrarMensagem("Registros de frequência dos jovens salvos!", 'success');
+carregarListaDeJovens();
+} catch (e) {
+hideLoading();
+mostrarMensagem("Erro ao salvar os registros.", 'error');
+}
+}
+
+window.gerarRelatorioJovens = async () => {
+const mesInput = document.getElementById('mes-relatorio-jovens').value;
+if(!mesInput) return mostrarMensagem("Por favor, selecione um mês.", "warning");
+
+showLoading("Gerando relatório dos jovens...");
+const container = document.getElementById('relatorio-container-jovens');
+container.innerHTML = '<p class="text-center text-gray-500">Processando dados...</p>';
+
+const jovensSnapshot = await getDocs(query(collection(db, "jovens"), orderBy("nome")));
+const jovensMap = new Map(jovensSnapshot.docs.map(doc => [doc.id, { nome: doc.data().nome, p_encontro: 0, p_algo: 0, faltas: 0 }]));
+
+const q = query(collection(db, "registros_jovens"), where("data", ">=", `${mesInput}-01`), where("data", "<=", `${mesInput}-31`));
+const registrosSnapshot = await getDocs(q);
+
+registrosSnapshot.forEach(doc => {
+const data = doc.data();
+const jovem = jovensMap.get(data.jovemId);
+if (jovem) {
+if (data.status === 'presente') {
+if (data.reuniao === 'encontro_jovem') jovem.p_encontro++;
+else jovem.p_algo++;
+} else {
+jovem.faltas++;
+}
+}
+});
+
+const sortedRelatorio = [...jovensMap.values()].sort((a, b) => (b.p_encontro + b.p_algo) - (a.p_encontro + a.p_algo));
+
+if(registrosSnapshot.empty) {
+container.innerHTML = `<p class="text-center text-gray-500">Nenhum registro de frequência encontrado para o mês selecionado.</p>`;
+hideLoading();
+return;
+}
+
+container.innerHTML = `
+<div id="relatorio-jovens-para-pdf" class="overflow-x-auto bg-white rounded-lg shadow-md">
+<table class="min-w-full">
+<thead class="bg-secundaria text-white">
+<tr>
+<th class="p-3 text-left">Jovem</th>
+<th class="p-2 text-center" title="Presenças (Fim de Semana)">P(FS)</th>
+<th class="p-2 text-center" title="Presenças (Segunda)">P(Seg)</th>
+<th class="p-2 text-center" title="Faltas Totais">Faltas</th>
+</tr>
+</thead>
+<tbody>
+${sortedRelatorio.map(d => `<tr class="border-b even:bg-gray-50" data-jovem-nome="${d.nome}" data-jovem-dados='${JSON.stringify(d)}'>
+<td class="p-2 font-semibold">${d.nome}
+<button onclick="compartilharRelatorioPessoalWhatsAppJovem(this)" title="Enviar para ${d.nome}" class="ml-2 float-right text-green-500 hover:text-green-700"><i class="fab fa-whatsapp"></i></button>
+</td>
+<td class="p-2 text-center">${d.p_encontro}</td>
+<td class="p-2 text-center">${d.p_algo}</td>
+<td class="p-2 text-center text-red-600">${d.faltas}</td>
+</tr>`).join('')}
+</tbody>
+</table>
+</div>
+<div class="mt-6 flex flex-col md:flex-row gap-4">
+<button onclick="gerarPDFCompleto('relatorio-jovens-para-pdf', 'relatorio_jovens.pdf')" class="w-full md:w-auto flex-1 bg-red-600 text-white font-bold py-3 px-6 rounded-lg flex items-center justify-center gap-2">
+<i class="fas fa-file-pdf"></i> Baixar PDF Completo
+</button>
+<button onclick="compartilharResumoWhatsApp('jovens', '${mesInput}')" class="w-full md:w-auto flex-1 bg-green-500 text-white font-bold py-3 px-6 rounded-lg flex items-center justify-center gap-2"><i class="fab fa-whatsapp"></i> Compartilhar Resumo</button>
+</div>
+`;
+hideLoading();
+}
+
+window.compartilharRelatorioPessoalWhatsAppJovem = (btn) => {
+const row = btn.closest('tr');
+const nome = row.getAttribute('data-jovem-nome');
+const dados = JSON.parse(row.g
