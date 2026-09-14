@@ -1,0 +1,91 @@
+            const contato = document.getElementById('perfil-contato').value.trim();
+            const fotoInput = document.getElementById('perfil-foto-input');
+            const file = fotoInput.files[0];
+
+            if(!nome) return mostrarMensagem("O nome não pode ficar em branco.", "warning");
+
+            showLoading("Salvando perfil...");
+
+            try {
+                let fotoURL;
+                if(file) {
+                    const storageRef = ref(storage, `${tipo}_fotos/${id}_${Date.now()}`);
+                    const snapshot = await uploadBytes(storageRef, file);
+                    fotoURL = await getDownloadURL(snapshot.ref);
+                }
+
+                const dataToUpdate = { nome, contato };
+                if (fotoURL) dataToUpdate.fotoURL = fotoURL;
+
+                await updateDoc(doc(db, tipo, id), dataToUpdate);
+                hideLoading();
+                modalPerfil.classList.add('hidden');
+                mostrarMensagem("Perfil atualizado com sucesso!", "success");
+
+                if(tipo === 'obreiros') await carregarListaDeObreiros();
+                if(tipo === 'jovens') await carregarListaDeJovens();
+
+            } catch(e) {
+                hideLoading();
+                console.error("Erro ao salvar perfil:", e);
+                mostrarMensagem("Erro ao salvar o perfil.", "error");
+            }
+        }
+
+        window.marcarPresenca = (btn, isFalta = false) => {
+            const parent = btn.parentElement;
+            parent.querySelectorAll('button').forEach(b => b.classList.remove('bg-green-500', 'bg-red-500', 'text-white'));
+            btn.classList.add(isFalta ? 'bg-red-500' : 'bg-green-500', 'text-white');
+            const justificativaInput = parent.closest('td').querySelector('input[data-tipo="justificativa"]');
+            if (justificativaInput) justificativaInput.classList.toggle('hidden', !isFalta);
+        }
+
+        const adicionarNovaPessoa = async (tipo) => {
+            const sufixo = (tipo === 'jovens') ? 'jovem' : 'obreiro';
+            const input = document.getElementById(`nome-novo-${sufixo}`);
+            
+            if (!input) {
+                console.error(`Elemento de input 'nome-novo-${sufixo}' não foi encontrado.`);
+                return;
+            }
+
+            const nome = input.value.trim();
+            if (!nome) {
+                return mostrarMensagem("O nome não pode estar vazio.", 'warning');
+            }
+            
+            showLoading("Adicionando...");
+            try {
+                await addDoc(collection(db, tipo), { nome, dataCadastro: new Date() });
+                input.value = '';
+                hideLoading();
+                mostrarMensagem(`${sufixo.charAt(0).toUpperCase() + sufixo.slice(1)} adicionado(a) com sucesso!`, 'success');
+                
+                if (tipo === 'obreiros') await carregarListaDeObreiros();
+                if (tipo === 'jovens') await carregarListaDeJovens();
+            } catch (e) {
+                hideLoading();
+                console.error("Erro ao adicionar:", e);
+                mostrarMensagem("Erro ao adicionar.", 'error');
+            }
+        };
+        
+        window.excluirPessoa = (id, nome, tipo) => {
+            mostrarMensagem(`Tem certeza que deseja excluir ${nome}?`, 'warning', true, async () => {
+                showLoading("Excluindo...");
+                try {
+                    await deleteDoc(doc(db, tipo, id));
+                    hideLoading();
+                    mostrarMensagem(`${nome} foi excluído(a).`, 'success');
+                    if (tipo === 'obreiros') await carregarListaDeObreiros();
+                    if (tipo === 'jovens') await carregarListaDeJovens();
+                } catch (e) {
+                    hideLoading();
+                    mostrarMensagem("Erro ao excluir.", 'error');
+                }
+            });
+        }
+
+        async function renderizarGerenciarObreiros() {
+            const container = document.getElementById('conteudo-gerenciarObreiros');
+            container.innerHTML = `
