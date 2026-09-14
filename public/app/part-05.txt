@@ -1,0 +1,82 @@
+Semanal');
+if (tribosNomes.length === 0) {
+container.innerHTML = `<h3 class="text-3xl font-bold text-principal mb-2">Controle de Pontuação</h3><p class="text-red-600">Nenhuma tribo foi configurada. Por favor, selecione as tribos participantes na aba 'Configurações'.</p>`;
+return;
+}
+container.innerHTML = `
+<h3 class="text-3xl font-bold text-principal mb-2">Controle de Pontuação</h3>
+<p class="text-gray-600 mb-6">As atividades da semana são carregadas da missão. Use "Lançamento Avulso" para pontos não programados.</p>
+<div class="mb-4 border-b border-gray-200">
+<nav class="flex space-x-4">
+<button onclick="trocarAbaPontos('semanal')" class="py-2 px-4 font-semibold border-b-2 border-principal text-principal">Lançamento da Semana</button>
+<button onclick="trocarAbaPontos('manual')" class="py-2 px-4 font-semibold border-b-2 border-transparent text-gray-500 hover:text-principal">Lançamento Avulso</button>
+</nav>
+</div>
+<div id="aba-pontos-semanal">
+<div id="checklist-container" class="space-y-6"></div>
+<button onclick="salvarPontosDaSemana()" class="mt-8 w-full bg-principal hover:bg-secundaria text-white font-bold py-4 px-6 rounded-lg text-lg"><i class="fas fa-save mr-2"></i> Salvar Todas as Pontuações</button>
+</div>
+<div id="aba-pontos-manual" class="hidden">
+<div class="bg-white p-6 rounded-xl shadow-lg border">
+<h4 class="text-xl font-bold text-secundaria mb-4 border-b pb-2">Registrar Pontos Avulsos</h4>
+<p class="text-sm text-gray-600 mb-4">Digite os pontos (positivos ou negativos) para cada tribo abaixo e clique em registrar.</p>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4" id="lista-tribos-avulso">
+${tribosNomes.map(id => `
+<div class="bg-gray-50 p-3 rounded-lg border">
+<div class="flex items-center mb-2">
+<img src="${tribosInfo[id].img}" class="w-8 h-8 rounded-full mr-2">
+<label for="pontos-avulso-${id}" class="font-semibold">${tribosInfo[id].nome}</label>
+</div>
+<input type="number" id="pontos-avulso-${id}" class="w-full text-center font-bold p-2 border rounded-lg" placeholder="0">
+</div>
+`).join('')}
+</div>
+<div class="flex gap-4 pt-4 mt-4 border-t">
+<textarea id="motivo-avulso" class="w-full p-2 border rounded-lg" placeholder="Motivo do lançamento (ex: Punição por atraso)"></textarea>
+</div>
+<div class="flex gap-4 pt-4">
+<button onclick="registrarPontosManuais()" class="w-full bg-principal hover:bg-secundaria text-white font-bold py-3 px-4 rounded-lg"><i class="fas fa-check mr-2"></i> Registrar Pontuações</button>
+</div>
+</div>
+</div>`;
+await renderChecklistSemanal();
+}
+window.trocarAbaPontos = (aba) => {
+document.getElementById('aba-pontos-semanal').classList.toggle('hidden', aba !== 'semanal');
+document.getElementById('aba-pontos-manual').classList.toggle('hidden', aba !== 'manual');
+document.querySelector('button[onclick="trocarAbaPontos(\'semanal\')"]').classList.toggle('border-principal', aba === 'semanal');
+document.querySelector('button[onclick="trocarAbaPontos(\'semanal\')"]').classList.toggle('text-principal', aba === 'semanal');
+document.querySelector('button[onclick="trocarAbaPontos(\'semanal\')"]').classList.toggle('border-transparent', aba !== 'semanal');
+document.querySelector('button[onclick="trocarAbaPontos(\'semanal\')"]').classList.toggle('text-gray-500', aba !== 'semanal');
+document.querySelector('button[onclick="trocarAbaPontos(\'manual\')"]').classList.toggle('border-principal', aba === 'manual');
+document.querySelector('button[onclick="trocarAbaPontos(\'manual\')"]').classList.toggle('text-principal', aba === 'manual');
+document.querySelector('button[onclick="trocarAbaPontos(\'manual\')"]').classList.toggle('border-transparent', aba !== 'manual');
+document.querySelector('button[onclick="trocarAbaPontos(\'manual\')"]').classList.toggle('text-gray-500', aba !== 'manual');
+}
+async function renderChecklistSemanal() {
+const container = document.getElementById('checklist-container');
+container.innerHTML = '<div class="text-center p-8 text-gray-500">Carregando atividades da missão...</div>';
+atividadesDaSemanaRenderizadas = [];
+try {
+const configDoc = await getDoc(doc(db, "config", "semanas"));
+const semanaAtual = configDoc.exists() ? configDoc.data().semanaAtual || 1 : 1;
+const missaoDoc = await getDoc(doc(db, "missoes", `semana${semanaAtual}`));
+
+let atividadesDaMissao = [];
+const textoMissao = missaoDoc.exists() && missaoDoc.data().texto ? missaoDoc.data().texto : MISSOES_PADRAO[semanaAtual];
+
+if (textoMissao) {
+const regex = /^(-?\d+):\s*(.*)/gm;
+let match;
+while ((match = regex.exec(textoMissao)) !== null) {
+atividadesDaMissao.push({ id: `missao_${atividadesDaMissao.length}`, nome: match[2].trim(), pontos: parseInt(match[1]) });
+}
+}
+
+atividadesDaSemanaRenderizadas = [...atividadesDaMissao];
+if (atividadesDaSemanaRenderizadas.length === 0) {
+container.innerHTML = '<div class="text-center p-8 text-gray-500">Nenhuma atividade pontuável encontrada na missão desta semana.</div>';
+return;
+}
+
+container.innerHTML = atividadesDaMissao.map(a => renderAtividadeCard(a)
