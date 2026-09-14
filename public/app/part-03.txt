@@ -1,0 +1,99 @@
+TML = typeof mensagem === 'string' 
+? `<div class="text-xl font-semibold">${mensagem}</div>` 
+: mensagem;
+
+modalConteudo.innerHTML = `<div class="p-6 rounded-xl shadow-lg text-center max-w-lg mx-auto ${bgColorClass}">${contentHTML}${isConfirmation ? `<div class="mt-4 flex justify-around"><button id="btn-confirma" class="bg-principal text-white px-6 py-2 rounded-full">Confirmar</button><button id="btn-cancela" class="bg-gray-400 text-white px-6 py-2 rounded-full">Cancelar</button></div>` : `<button id="btn-ok" class="bg-principal text-white px-6 py-2 rounded-full mt-4">OK</button>`}</div>`;
+modalMensagem.classList.remove('hidden');
+if (isConfirmation) {
+document.getElementById('btn-confirma').onclick = () => { onConfirm(); modalMensagem.classList.add('hidden'); };
+document.getElementById('btn-cancela').onclick = () => { onCancel(); modalMensagem.classList.add('hidden'); };
+} else {
+document.getElementById('btn-ok').onclick = () => modalMensagem.classList.add('hidden');
+}
+}
+
+async function setupFirestoreListeners() {
+if (rallyConfig.finalizado) return;
+if (Object.keys(tribosInfo).length === 0) {
+console.log("Nenhuma tribo configurada. Listeners não iniciados.");
+return;
+}
+onSnapshot(collection(db, "tribos"), (snapshot) => {
+const tribos = [];
+snapshot.forEach((doc) => {
+if(tribosInfo[doc.id]){
+tribos.push({ id: doc.id, ...doc.data() });
+}
+});
+
+if (paginaInicialDiv && !paginaInicialDiv.classList.contains('hidden')) {
+renderizarRankingProfissional(tribos);
+} else if (painelAssistenteDiv && !painelAssistenteDiv.classList.contains('hidden')) {
+if(document.getElementById('conteudo-visaoGeral') && !document.getElementById('conteudo-visaoGeral').classList.contains('hidden')) {
+renderizarVisaoGeral(tribos);
+}
+}
+});
+}
+
+async function renderizarRankingFinalAnimado() {
+function fireConfetti(isWinner) {
+const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 100 };
+function randomInRange(min, max) { return Math.random() * (max - min) + min; }
+const interval = setInterval(function() {
+const particleCount = isWinner ? 200 : 50;
+confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } }));
+confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } }));
+}, 250);
+setTimeout(() => clearInterval(interval), isWinner ? 4000 : 1000);
+}
+
+const container = document.getElementById('ranking-container');
+const ranking = rallyConfig.rankingFinal || [];
+if(ranking.length === 0){
+container.innerHTML = `<div class="text-center text-2xl font-bold text-secundaria p-8">O Rally foi finalizado!</div>`;
+return;
+}
+
+container.innerHTML = `<div class="text-center text-4xl font-black text-secundaria p-8 animate-fadeIn text-glow">GRANDES CAMPEÕES DO ${tituloDoEvento}</div>
+<div id="podium-final" class="flex items-end justify-center w-full mt-8"></div>`;
+const podiumContainer = document.getElementById('podium-final');
+const rankingInvertido = [...ranking].slice(0, 3).reverse();
+
+rankingInvertido.forEach((tribo, index) => {
+setTimeout(() => {
+const rank = 3 - index;
+const isWinner = rank === 1;
+let iconHTML = '';
+if (rank === 1) iconHTML = '<i class="fas fa-trophy text-5xl" style="color: var(--cor-ouro);"></i>';
+if (rank === 2) iconHTML = '<i class="fas fa-medal text-5xl" style="color: var(--cor-prata);"></i>';
+if (rank === 3) iconHTML = '<i class="fas fa-medal text-5xl" style="color: var(--cor-bronze);"></i>';
+const element = document.createElement('div');
+element.className = `podium-${rank} w-1/3 flex flex-col items-center text-center p-4 opacity-0 animate-fadeInUp tribo-card`;
+element.innerHTML = `
+${iconHTML}
+<img src="${tribo.img}" alt="${tribo.nome}" class="w-24 h-24 rounded-full border-4 ${isWinner ? 'border-yellow-400' : 'border-gray-300'} my-4 object-cover shadow-lg">
+<h3 class="text-2xl font-bold text-secundaria uppercase">${tribo.nome}</h3>
+<p class="text-4xl font-black font-montserrat text-principal">${tribo.pontos || 0}</p>
+<div class="h-24 w-full ${rank === 1 ? 'bg-yellow-400' : (rank === 2 ? 'bg-gray-400' : 'bg-orange-700')} mt-2 rounded-t-lg flex items-center justify-center text-4xl font-bold text-white shadow-inner">${rank}º</div>
+`;
+podiumContainer.appendChild(element);
+fireConfetti(isWinner);
+}, (index + 1) * 2000);
+});
+}
+
+function renderizarRankingProfissional(tribos) {
+const container = document.getElementById('ranking-container');
+if (!container) return;
+
+const ranking = tribos.filter(t => tribosInfo[t.id]).sort((a, b) => (b.pontos || 0) - (a.pontos || 0));
+
+const podiumHTML = ranking.slice(0, 3).map((tribo, index) => {
+const rank = index + 1;
+const info = tribosInfo[tribo.id];
+if (!info) return '';
+let iconHTML = '';
+if (rank === 1) iconHTML = '<i class="fas fa-trophy text-4xl" style="color: var(--cor-ouro);"></i>';
+if (rank === 2) iconHTML = '<i class="fas fa-medal text-4xl" style="color: var(--cor-prata);"></i>';
+if (rank === 3) iconHTML = '<i class="fas fa-medal text-4xl" style="color: var(--cor-b
