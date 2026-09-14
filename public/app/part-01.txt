@@ -1,0 +1,71 @@
+ retornar.\n`+
+`150: DOMINGO (06/09) ⛪ CONCENTRAÇÃO DE FÉ: MISSÃO PRINCIPAL por jovem presente às 9h30!\n`+
+`75: DOMINGO (06/09) ⛪ CONCENTRAÇÃO DE FÉ: por jovem presente às 7h.\n\n`+
+`🔥 MISSÕES ESPECIAIS (BÔNUS ALTO!)\n\n`+
+`300: PONTO DE ORAÇÃO: Por tribo que organizar um momento de oração durante a semana.\n`+
+`1000: EVANGELIZAÇÃO CRIATIVA: Para a tribo que fizer uma ação evangelística inovadora.\n`+
+`2000: DESAFIO DOS VALENTES: Montar um time de futebol (mínimo 5 jogadores) e trazer no Encontro Jovem.\n`+
+`700: DOAÇÃO: Doar 1 resma de papel A4.\n`+
+`1000: MELHOR FOTO: A melhor foto da tribo (dentro ou fora da igreja).\n`+
+`300: MANUTENÇÃO DO TEMPLO: Por jovem que ajudar na limpeza no Sábado (8h30).\n`+
+`10000: META DA 1ª SEMANA: TRAZER 5 JOVENS NOVOS.`,
+2: `🛡️ SEMANA 2 (01 a 07 de Setembro) 🛡️\n` +
+`TEMA: A FORÇA DA UNIÃO\n` +
+`Uma tribo unida é imbatível! O foco é o trabalho em equipe e o cuidado uns com os outros.\n` +
+`📅 MISSÕES SEMANAIS ⚔️\n\n` +
+`60: SEGUNDA (01/09) 🅰️➕ ALGO A MAIS: por jovem presente.\n` +
+`100: BÔNUS SEGUNDA: para a tribo que levar um lanche para compartilhar.\n` +
+`120: TERÇA (02/09) 🦶🏘️ PÉ NO BAIRRO: por trabalho de evangelismo.\n` +
+`40: QUARTA (03/09) 📖 SALVAÇÃO DA ALMA: por jovem em qualquer reunião.\n` +
+`50: BÔNUS QUARTA: por jovem que trouxer um amigo convidado para o culto das 18h!\n` +
+`60: QUINTA (04/09) ❤️‍🔥 TERAPIA DO AMOR: por jovem presente às 19h.\n` +
+`30: SÁBADO (06/09) 📻 CONEXÃO JOVEM: por jovem conectado (11h30).\n` +
+`160: DOMINGO (07/09) 🎯 GRANDE ENCONTRO JOVEM (EJ): MISSÃO PRINCIPAL por jovem na Concentração de Fé às 9h30!\n` +
+`120: DOMINGO (07/09) 🎯 por jovem novo.\n` +
+`80: DOMINGO (07/09) 🎯 por jovem presente às 7h.\n` +
+`70: DOMINGO (07/09) 🎯 por jovem afastado que retornar.\n\n` +
+`🔥 MISSÕES ESPECIAIS (BÔNUS ALTO!)\n\n` +
+`1500: DESAFIO DOS VALENTES: Doar para a igreja 1 Vassoura de pelo, 1 Rodo e 2 Panos de Chão novos.\n` +
+`1200: VÍDEO DA TRIBO: Criar um vídeo de até 30s mostrando a união da tribo.\n` +
+`500: ANJO DA SEMANA: "Adotar" um jovem desanimado, dando atenção especial durante a semana.\n` +
+`1000: FOTO EM EQUIPE: A foto mais criativa com TODOS os membros da tribo fazendo um símbolo que represente a equipe.\n` +
+`12000: META DA 2ª SEMANA: TRAZER 7 JOVENS NOVOS.`,
+3: `🛡️ SEMANA 3 (08 a 14 de Setembro) 🛡️\n` +
+`TEMA: RAÍZES PROFUNDAS\n` +
+`O foco é o fortalecimento espiritual e o conhecimento da Palavra.\n` +
+`📅 MISSÕES SEMANAIS ⚔️\n\n` +
+`50: SEGUNDA (08/09) 🅰️➕ ALGO A MAIS: por jovem presente.\n` +
+`20: BÔNUS SEGUNDA: por jovem que levar sua Bíblia física.\n` +
+`150: TERÇA (09/09) 💌 EVANGELISMO: por ação de "Cartas de Esperança".\n` +
+`30: QUARTA (10/09) 📖 SALVAÇÃO DA ALMA: por jovem em qualquer reunião.\n` +
+`100: BÔNUS QUARTA: para a tribo que organizar uma oração de 5 minutos antes do culto das 18h!\n` +
+`50: QUINTA (11/09) ❤️‍🔥 TERAPIA DO AMOR: por jovem presente às 19h.\n` +
+`25: SÁBADO (13/09) 📻 CONEXÃO JOVEM: por jovem conectado.\n` +
+`150: DOMINGO (14/09) 🎯 GRANDE ENCONTRO JOVEM (EJ): MISSÃO PRINCIPAL por jovem na Concentração de Fé às 9h30!\n` +
+`100: DOMINGO (14/09) 🎯 por jovem novo.\n` +
+`75: DOMINGO (14/09) 🎯 por jovem presente às 7h.\n` +
+`60: DOMINGO (14/09) 🎯 por jovem afastado.\n\n` +
+`🔥 MISSÕES ESPECIAIS (BÔNUS ALTO!)\n\n` +
+`1500: DESAFIO DOS VALENTES: Doar 2 pacotes de Copos Descartáveis (200ml) e 1 pacote de Papel Higiênico (com 4 rolos).\n` +
+`1500: MEDITAR NA BÍBLIA: Reunir a tribo para meditar em um capítulo de Provérbios e entregar um resumo.\n` +
+`500: ORAÇÃO COM A TRIBO: Organizar um propósito de oração com a tribo.\n` +
+`700: FOTO "A GRAÇA NA PRÁTICA": A melhor foto representando um momento de AÇÃO PELAS ALMAS.\n` +
+`500: META DA 3ª SEMANA: GARANTIR QUE TODOS DA TRIBO PARTICIPEM DE PELO MENOS UM PONTO DE ORAÇÃO!`,
+4: `🛡️ SEMANA 4 (15 a 21 de Setembro) 🛡️\n` +
+`TEMA: CONECTADOS COM O REINO\n` +
+`Usando a criatividade e a tecnologia para evangelizar no mundo digital e além!\n` +
+`📅 MISSÕES SEMANAIS ⚔️\n\n` +
+`60: SEGUNDA (15/09) 🅰️➕ ALGO A MAIS: por jovem presente.\n` +
+`300: TERÇA (16/09) 💻 EVANGELISMO DIGITAL: para a tribo que criar um conteúdo evangelístico que alcance mais de 50 curtidas.\n` +
+`40: QUARTA (17/09) 📖 SALVAÇÃO DA ALMA: por jovem em qualquer reunião.\n` +
+`150: BÔNUS QUARTA: para a tribo que fizer uma live de 5 min no Instagram antes do culto das 18h!\n` +
+`70: QUINTA (18/09) ❤️‍🔥 TERAPIA DO AMOR: por jovem presente.\n` +
+`30: SÁBADO (20/09) 📻 CONEXÃO JOVEM: por jovem conectado.\n` +
+`50: BÔNUS SÁBADO: por postar um print nos stories marcando a FJU.\n` +
+`170: DOMINGO (21/09) 🎯 GRANDE ENCONTRO JOVEM (EJ): MISSÃO PRINCIPAL por jovem na Concentração de Fé às 9h30!\n` +
+`130: DOMINGO (21/09) 🎯 por jovem novo.\n` +
+`90: DOMINGO (21/09) 🎯 por jovem presente às 7h.\n` +
+`80: DOMINGO (21/09) 🎯 por jovem afastado.\n\n` +
+`🔥 MISSÕES ESPECIAIS (BÔNUS ALTO!)\n\n` +
+`1800: DESAFIO DOS VALENTES: Doar para a igreja 2 litros de Desinfetante e 1 garrafa de Álcool 70%.\n` +
+`2500: CURTA-METRAGEM: Produzir um vídeo de 
