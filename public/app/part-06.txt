@@ -1,0 +1,143 @@
+).join('');
+
+} catch(e) {
+console.error("Erro ao renderizar checklist:", e);
+container.innerHTML = '<div class="text-center p-8 text-red-500">Erro ao carregar atividades.</div>';
+}
+}
+function renderAtividadeCard(atividade) {
+let descricaoPontos = '';
+const nomeLower = atividade.nome.toLowerCase();
+if (nomeLower.includes('por jovem') || nomeLower.includes('cada jovem')) {
+descricaoPontos = `<span class="font-bold">${atividade.pontos}</span> pontos por jovem`;
+} else if (nomeLower.includes('por trabalho') || nomeLower.includes('por ação')) {
+descricaoPontos = `<span class="font-bold">${atividade.pontos}</span> pontos por ação`;
+} else {
+descricaoPontos = `<span class="font-bold">${atividade.pontos}</span> pontos (valor total da missão)`;
+}
+
+return `<div class="bg-white p-4 rounded-xl shadow-md border border-t-4 border-principal" id="atividade-${atividade.id}">
+<h4 class="text-lg font-bold text-secundaria mb-2">${atividade.nome}</h4>
+<p class="text-sm text-gray-600 bg-gray-100 p-2 rounded-md mb-4">${descricaoPontos}</p>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+${tribosNomes.map(triboId => {
+const info = tribosInfo[triboId];
+if (!info) return '';
+return `
+<div class="bg-gray-50 p-3 rounded-lg border">
+<div class="flex items-center mb-2">
+<img src="${info.img}" class="w-8 h-8 rounded-full mr-2">
+<label for="${atividade.id}-${triboId}" class="font-semibold">${info.nome}</label>
+</div>
+<input type="number" id="${atividade.id}-${triboId}" class="w-full text-center font-bold p-2 border rounded-lg" value="0">
+</div>
+`}).join('')}
+</div>
+</div>`;
+}
+
+window.salvarPontosDaSemana = async () => {
+showLoading("Processando pontuações...");
+const batch = writeBatch(db);
+const tribosPontosAcumulados = tribosNomes.reduce((acc, tid) => ({...acc, [tid]: 0}), {});
+const historicoEntradas = [];
+
+atividadesDaSemanaRenderizadas.forEach(atividade => {
+tribosNomes.forEach(triboId => {
+const input = document.getElementById(`${atividade.id}-${triboId}`);
+const pontos = parseInt(input?.value) || 0;
+if (pontos !== 0) {
+tribosPontosAcumulados[triboId] += pontos;
+historicoEntradas.push({
+triboId,
+triboNome: tribosInfo[triboId]?.nome || triboId,
+pontos,
+motivo: atividade.nome,
+data: new Date()
+});
+}
+});
+});
+
+if (historicoEntradas.length === 0) {
+hideLoading();
+return mostrarMensagem("Nenhuma pontuação foi inserida.", "info");
+}
+
+try {
+for (const triboId of tribosNomes) {
+const pontosSomados = tribosPontosAcumulados[triboId];
+if (pontosSomados === 0) continue;
+
+const triboRef = doc(db, "tribos", triboId);
+const triboSnap = await getDoc(triboRef);
+
+let pontosAtuais = 0;
+if (triboSnap.exists()) {
+pontosAtuais = triboSnap.data().pontos || 0;
+}
+
+const novosPontos = Math.max(0, pontosAtuais + pontosSomados);
+batch.set(triboRef, { pontos: novosPontos }, { merge: true });
+}
+
+historicoEntradas.forEach(entrada => {
+const histRef = doc(collection(db, "historico_pontos"));
+batch.set(histRef, entrada);
+});
+
+await batch.commit();
+
+hideLoading();
+await renderChecklistSemanal();
+mostrarMensagem("✅ Todas as pontuações foram salvas com sucesso!", "success");
+} catch (e) {
+hideLoading();
+console.error("Erro ao salvar pontos:", e);
+mostrarMensagem("⚠️ Erro ao salvar as pontuações. Verifique o console.", "error");
+}
+};
+
+window.registrarPontosManuais = async () => {
+const motivo = document.getElementById(`motivo-avulso`).value.trim();
+if (!motivo) return mostrarMensagem("Por favor, informe o motivo do lançamento avulso.", 'warning');
+
+const historicoEntradas = [];
+tribosNomes.forEach(triboId => {
+const input = document.getElementById(`pontos-avulso-${triboId}`);
+const pontos = parseInt(input.value) || 0;
+if (pontos !== 0) {
+historicoEntradas.push({ triboId, pontos });
+}
+});
+
+if (historicoEntradas.length === 0) return mostrarMensagem("Nenhum ponto foi inserido para registrar.", 'info');
+
+showLoading("Registrando...");
+try {
+const batch = writeBatch(db);
+const tribosMap = new Map((await getDocs(collection(db, "tribos"))).docs.map(d => [d.id, d.data().pontos || 0]));
+
+for (const entrada of historicoEntradas) {
+const { triboId, pontos } = entrada;
+const info = tribosInfo[triboId];
+const triboRef = doc(db, "tribos", triboId);
+const currentPontos = tribosMap.get(triboId) || 0;
+const newPontos = Math.max(0, currentPontos + pontos);
+
+batch.update(triboRef, { pontos: newPontos });
+batch.set(doc(collection(db, "historico_pontos")), { triboId, triboNome: info.nome, pontos, motivo, data: new Date() });
+}
+await batch.commit();
+
+tribosNomes.forEach(id => document.getElementById(`pontos-avulso-${id}`).value = '');
+document.getElementById(`motivo-avulso`).value = '';
+hideLoading();
+mostrarMensagem(`Pontuação avulsa registrada com sucesso!`, 'success');
+} catch(e) { hideLoading(); mostrarMensagem("Erro ao registrar a pontuação.", 'error'); }
+}
+
+window.abrirModalPerfil = async (id, tipo) => {
+modalPerfil.classList.remove('hidden');
+const conteudo = document.getElementById('conteudo-modal-perfil');
+conteudo.innerHTML = `<div class="text-center"><i class="f
