@@ -1,0 +1,110 @@
+}</td>`;
+corpoTabela.appendChild(tr);
+});
+
+semanasData.forEach(semana => {
+const btn = document.getElementById(`btn-edit-missao-${semana.num}`);
+if (btn) {
+btn.addEventListener('click', () => abrirModalEditarMissao(semana.num, semana.missao));
+}
+});
+
+hideLoading();
+} catch (e) {
+hideLoading();
+console.error("Erro ao carregar semanas:", e);
+corpoTabela.innerHTML = '<tr><td colspan="4" class="text-center p-4 text-red-500">Erro ao carregar.</td></tr>';
+}
+}
+
+window.abrirModalEditarMissao = (numSemana, missaoAtual = '') => {
+const modalTitle = `<h3 class="text-2xl font-bold text-secundaria mb-4">Definir Missão - Semana ${numSemana}</h3>`;
+const modalInstructions = `<p class="text-sm bg-blue-50 p-2 rounded-lg border-l-4 border-principal text-blue-800 mb-4"><strong>Dica:</strong> Para criar uma tarefa pontuável, inicie a linha com <code class="font-bold">pontos:</code>. <br>Exemplo: <code class="font-bold">150: Trazer 5 jovens.</code></p>`;
+const modalTextarea = `<textarea id="novaMissaoSemana" class="w-full h-64 p-2 border rounded-lg">${missaoAtual}</textarea>`;
+const modalContent = modalTitle + modalInstructions + modalTextarea;
+
+mostrarMensagem(modalContent, 'info', true, async () => {
+const novaMissao = document.getElementById('novaMissaoSemana').value;
+showLoading("Salvando missão...");
+try {
+await setDoc(doc(db, "missoes", `semana${numSemana}`), { texto: novaMissao }, { merge: true });
+hideLoading();
+mostrarMensagem("Missão atualizada!", "success");
+await carregarHistoricoSemanas();
+} catch (e) { hideLoading(); mostrarMensagem("Erro ao atualizar a missão.", "error"); }
+});
+}
+
+window.confirmarFinalizacao = (numSemana) => {
+mostrarMensagem(`Tem certeza que deseja (re)finalizar a Semana ${numSemana}? Esta ação irá registrar (ou sobrescrever) o ranking atual.`, 'warning', true, () => finalizarSemana(numSemana));
+}
+
+async function finalizarSemana(numSemana) {
+showLoading("Finalizando semana...");
+try {
+const tribosSnapshot = await getDocs(query(collection(db, "tribos"), orderBy("pontos", "desc")));
+const ranking = tribosSnapshot.docs
+.filter(d => tribosInfo[d.id])
+.map(d => ({ id: d.id, nome: tribosInfo[d.id].nome, pontos: d.data().pontos }));
+
+const batch = writeBatch(db);
+const histRef = doc(db, "historico_semanas", `semana${numSemana}`);
+batch.set(histRef, { ranking, dataFinalizacao: new Date() });
+
+const configRef = doc(db, "config", "semanas");
+const totalSemanas = rallyConfig.semanas || 5;
+
+const cfgSnap = await getDoc(configRef);
+const semanaAtual = cfgSnap.exists() ? cfgSnap.data().semanaAtual || 1 : 1;
+
+if (numSemana < totalSemanas && numSemana === semanaAtual) {
+batch.update(configRef, { semanaAtual: numSemana + 1 });
+} else if (numSemana === totalSemanas && numSemana === semanaAtual) {
+mostrarMensagem("Esta é a última semana! Considere finalizar o Rally na aba de Configurações.", "info");
+}
+
+await batch.commit();
+hideLoading();
+mostrarMensagem(`Semana ${numSemana} (re)finalizada com sucesso!`, 'success');
+await carregarHistoricoSemanas();
+} catch (e) {
+hideLoading();
+console.error("Erro ao finalizar semana:", e);
+mostrarMensagem("Erro ao finalizar a semana.", "error");
+}
+}
+
+async function renderizarConfiguracoes() {
+const container = document.getElementById('conteudo-configuracoes');
+container.innerHTML = `
+<h3 class="text-3xl font-bold text-principal mb-6">Configurações e Gerenciamento do Rally</h3>
+<p class="text-gray-600 mb-8">Use os botões abaixo para gerenciar o ciclo de vida do evento.</p>
+<div class="space-y-6">
+<div class="bg-white p-6 rounded-xl shadow-lg border">
+<h4 class="text-xl font-bold text-secundaria mb-2">Configurar Rally</h4>
+<p class="text-gray-700 mb-4">Edite o título, tribos, cores e duração do rally atual ou prepare um novo.</p>
+<button onclick="abrirModalConfiguracoesRally()" class="w-full bg-principal hover:bg-secundaria text-white font-bold py-3 px-6 rounded-lg text-lg">
+<i class="fas fa-edit mr-2"></i> Abrir Configurações
+</button>
+</div>
+
+<div class="bg-yellow-50 p-6 rounded-lg border-l-4 border-yellow-500">
+<h4 class="text-xl font-bold text-yellow-700 mb-2">Área de Manutenção</h4>
+<p class="text-gray-700 mb-4">Estas ações afetam os dados atuais do rally. Use com cuidado.</p>
+<div class="flex flex-col md:flex-row gap-4">
+<button onclick="reiniciarRally()" class="flex-1 bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded-lg"><i class="fas fa-sync-alt mr-2"></i>Reiniciar Rally</button>
+<button onclick="finalizarRally()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg"><i class="fas fa-flag-checkered mr-2"></i>Finalizar Rally</button>
+</div>
+</div>
+</div>
+`;
+}
+window.abrirModalConfiguracoesRally = async () => {
+modalConfigRally.classList.remove('hidden');
+const container = document.getElementById('conteudo-modal-config-rally');
+container.innerHTML = `<p class="text-center">Carregando configurações...</p>`;
+
+const configAtual = rallyConfig;
+const tribosAtivasAtuais = Object.keys(configAtual.tribosAtivas || {});
+
+let chec
