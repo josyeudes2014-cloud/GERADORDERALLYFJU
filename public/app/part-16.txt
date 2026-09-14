@@ -1,0 +1,128 @@
+;
+mostrarMensagem("Ocorreu um erro ao salvar as configurações.", "error");
+}
+}
+
+async function executarResetCompleto(reloadPage = true) {
+showLoading("Reiniciando o rally...");
+try {
+const batch = writeBatch(db);
+
+const tribosSnap = await getDocs(collection(db, "tribos"));
+tribosSnap.forEach(d => batch.update(d.ref, { pontos: 0 }));
+
+const collectionsToDelete = ["historico_pontos", "historico_semanas", "registros_obreiros", "registros_jovens", "missoes"];
+for (const collName of collectionsToDelete) {
+const snapshot = await getDocs(collection(db, collName));
+snapshot.forEach(doc => batch.delete(doc.ref));
+}
+
+await setDoc(doc(db, "config", "semanas"), { semanaAtual: 1 });
+await batch.commit();
+
+hideLoading();
+if(reloadPage){
+mostrarMensagem("Rally reiniciado com sucesso! A página será recarregada.", "success");
+setTimeout(() => location.reload(), 2000);
+}
+} catch (e) {
+hideLoading();
+console.error("Erro ao reiniciar o rally:", e);
+mostrarMensagem("Ocorreu um erro grave ao reiniciar o rally.", "error");
+}
+}
+
+window.reiniciarRally = () => {
+mostrarMensagem("Tem certeza que deseja reiniciar o rally? TODAS as pontuações, históricos e missões editadas serão apagados para restaurar o padrão.", 'warning', true, () => executarResetCompleto(true));
+}
+
+window.finalizarRally = () => {
+mostrarMensagem("Tem certeza que deseja finalizar o rally? O ranking será permanentemente exibido e o painel será bloqueado até que um novo rally seja configurado.", 'warning', true, 
+async () => {
+showLoading("Finalizando...");
+try {
+const tribosSnapshot = await getDocs(query(collection(db, "tribos"), orderBy("pontos", "desc")));
+const rankingFinal = tribosSnapshot.docs
+.filter(d => tribosInfo[d.id])
+.map(d => ({ 
+id: d.id, 
+nome: tribosInfo[d.id].nome, 
+img: tribosInfo[d.id].img, 
+pontos: d.data().pontos 
+}));
+
+await updateDoc(doc(db, "configuracao", "geral"), {
+finalizado: true,
+rankingFinal: rankingFinal,
+dataFinalizacao: new Date()
+});
+
+hideLoading();
+mostrarMensagem("Rally finalizado com sucesso! A página será recarregada para exibir os campeões.", "success");
+setTimeout(() => location.reload(), 2500);
+} catch(e) {
+hideLoading();
+console.error("Erro ao finalizar:", e);
+mostrarMensagem("Erro ao finalizar o rally.", "error");
+}
+});
+}
+
+window.gerarPDFCompleto = async (elementId, fileName) => {
+const { jsPDF } = window.jspdf;
+const relatorioEl = document.getElementById(elementId);
+if (!relatorioEl) {
+mostrarMensagem("Elemento do relatório não encontrado.", 'error');
+return;
+}
+showLoading('Gerando PDF Completo...');
+const canvas = await html2canvas(relatorioEl);
+hideLoading();
+const pdf = new jsPDF('p', 'mm', 'a4');
+const pdfWidth = pdf.internal.pageSize.getWidth();
+pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 10, 10, pdfWidth - 20, 0);
+pdf.save(fileName);
+}
+
+function renderizarRelatorioGeral() {
+const container = document.getElementById('conteudo-relatorioGeral');
+container.innerHTML = `
+<h3 class="text-3xl font-bold text-principal mb-2">Relatório do Encontro Jovem</h3>
+<p class="text-gray-600 mb-6">Selecione a data do Encontro Jovem (Sábado ou Domingo) para gerar um resumo completo e compartilhar.</p>
+
+<div class="bg-white p-4 rounded-lg shadow-md mb-6 flex flex-col md:flex-row items-center gap-4">
+<label for="data-relatorio-geral" class="font-semibold text-secundaria whitespace-nowrap">Selecione a Data:</label>
+<input type="date" id="data-relatorio-geral" class="p-2 rounded-lg border w-full md:w-auto">
+<button id="btn-gerar-relatorio" class="w-full md:w-auto bg-principal text-white px-6 py-2 rounded-lg font-semibold hover:bg-secundaria">
+<i class="fas fa-sync-alt mr-2"></i>Gerar Relatório
+</button>
+</div>
+
+<div id="container-resultado-relatorio" class="bg-gray-50 p-6 rounded-lg shadow-inner hidden"></div>
+`;
+document.getElementById('btn-gerar-relatorio').addEventListener('click', gerarRelatorioEncontroJovem);
+}
+
+async function gerarRelatorioEncontroJovem() {
+const dataInput = document.getElementById('data-relatorio-geral');
+const dataSelecionada = dataInput.value;
+if (!dataSelecionada) {
+return mostrarMensagem("Por favor, selecione uma data.", 'warning');
+}
+const dateObj = new Date(dataSelecionada + 'T12:00:00');
+if (dateObj.getDay() !== 0 && dateObj.getDay() !== 6) {
+return mostrarMensagem("Data inválida. O Encontro Jovem acontece aos Sábados ou Domingos. Por favor, selecione um dia de fim de semana.", 'warning');
+}
+
+showLoading("Gerando relatório...");
+const container = document.getElementById('container-resultado-relatorio');
+container.innerHTML = '<p>Processando dados...</p>';
+container.classList.remove('hidden');
+
+try {
+const qObreiros = query(collection(db, "registros_obreiros"), where("data", "==", dataSelecionada), where("reuniao", "==", "encontro_jovem"));
+const qJovens = query(collection(db, "registros_jovens"), where("data", "==", dataSelecionada), where("reuniao", "==", "encontro_jovem"));
+
+const [obreirosSnapshot, jovensSnapshot] = await Promise.all([getDocs(qObreiros), getDocs(qJovens)]);
+
+let obreirosPresentes = 0;
